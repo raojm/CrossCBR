@@ -13,6 +13,7 @@ from torch.utils.tensorboard import SummaryWriter
 import torch
 import torch.optim as optim
 from utility import Datasets
+from RoDataset import RoDatasets
 from models.CrossCBR import CrossCBR
 
 
@@ -43,7 +44,7 @@ def main():
         conf = conf[dataset_name]
     conf["dataset"] = dataset_name
     conf["model"] = paras["model"]
-    dataset = Datasets(conf)
+    dataset = RoDatasets(conf)
 
     conf["gpu"] = paras["gpu"]
     conf["info"] = paras["info"]

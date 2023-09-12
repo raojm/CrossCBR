@@ -268,6 +268,8 @@ class CrossCBR(nn.Module):
         # users: [bs, 1]
         # bundles: [bs, 1+neg_num]
         users, bundles = batch
+
+        # feature 需要通过 embedding层重新算
         users_feature, bundles_feature = self.propagate()
 
         users_embedding = [i[users].expand(-1, bundles.shape[1], -1) for i in users_feature]
