@@ -45,7 +45,7 @@ class RoDatasets():
         self.user_feature = []
         self.user_bundle = []
 
-        with open(os.path.join("./datasets/RO/orig", 'bundle_item.csv'), 'r') as f:
+        with open(os.path.join("./datasets/RO/orig", 'bundle_item.csv'), 'r', encoding='UTF-8') as f:
             for line in f.readlines()[1:]:
                 bundle_info_tuple = []
                 bundle_mapping_index = -1
@@ -70,7 +70,9 @@ class RoDatasets():
                         else:
                             self.item_mapping_array.append(field_value)
                         # bundle item 列表
-                        self.bundle_item.append([bundle_mapping_index, item_mapping_index])
+                        bundle_item_tuple = [bundle_mapping_index, item_mapping_index]
+                        if bundle_item_tuple not in self.bundle_item:
+                            self.bundle_item.append(bundle_item_tuple)
                 # bundle feature
                 self.bundle_feature.insert(bundle_mapping_index, bundle_info_tuple)
                 self.bundle_item_orig_data.append(bundle_info_tuple)
@@ -80,7 +82,7 @@ class RoDatasets():
         # print(self.item_mapping_array)
         # print(self.bundle_item)
 
-        with open(os.path.join("./datasets/RO/orig", 'user_bundle.csv'), 'r') as f:
+        with open(os.path.join("./datasets/RO/orig", 'user_bundle.csv'), 'r', encoding='UTF-8') as f:
             for line in f.readlines()[1:]:
                 user_info_tuple = []
                 user_mapping_index = -1
@@ -100,7 +102,9 @@ class RoDatasets():
                 self.user_feature.insert(user_mapping_index, user_info_tuple)
                 # # user bundle 列表
                 bundle_id = user_info_tuple[8]
-                self.user_bundle.append([user_mapping_index, self.bundle_mapping_array.index(bundle_id)])
+                user_bundle_item_tuple = [user_mapping_index, self.bundle_mapping_array.index(bundle_id)]
+                if user_bundle_item_tuple not in self.user_bundle:
+                    self.user_bundle.append(user_bundle_item_tuple)
                 self.user_bundle_orig_data.append(user_info_tuple)
 
             # self.user_bundle_orig_data = list(map(lambda s: tuple(aaaa(i.strip('"')) for i in s[:-1].split(',')), f.readlines()[1:]))
