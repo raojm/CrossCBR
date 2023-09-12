@@ -155,6 +155,30 @@ def main():
                     best_metrics, best_perform, best_epoch = log_metrics(conf, model, metrics, run, log_path, checkpoint_model_path, checkpoint_conf_path, epoch, batch_anchor, best_metrics, best_perform, best_epoch)
 
 
+def test(model, dataloader, conf):
+    tmp_metrics = {}
+    for m in ["recall", "ndcg"]:
+        tmp_metrics[m] = {}
+        for topk in conf["topk"]:
+            tmp_metrics[m][topk] = [0, 0]
+
+    device = conf["device"]
+    model.eval()
+    rs = model.propagate(test=True)
+    for users, ground_truth_u_b, train_mask_u_b in dataloader:
+        pred_b = model.evaluate(rs, users.to(device))
+        pred_b -= 1e8 * train_mask_u_b.to(device)
+        tmp_metrics = get_metrics(tmp_metrics, ground_truth_u_b.to(device), pred_b, conf["topk"])
+
+    metrics = {}
+    for m, topk_res in tmp_metrics.items():
+        metrics[m] = {}
+        for topk, res in topk_res.items():
+            metrics[m][topk] = res[0] / res[1]
+
+    return metrics
+
+
 def init_best_metrics(conf):
     best_metrics = {}
     best_metrics["val"] = {}
@@ -225,31 +249,6 @@ def log_metrics(conf, model, metrics, run, log_path, checkpoint_model_path, chec
     log.close()
 
     return best_metrics, best_perform, best_epoch
-
-
-def test(model, dataloader, conf):
-    tmp_metrics = {}
-    for m in ["recall", "ndcg"]:
-        tmp_metrics[m] = {}
-        for topk in conf["topk"]:
-            tmp_metrics[m][topk] = [0, 0]
-
-    device = conf["device"]
-    model.eval()
-    rs = model.propagate(test=True)
-    for users, ground_truth_u_b, train_mask_u_b in dataloader:
-        pred_b = model.evaluate(rs, users.to(device))
-        pred_b -= 1e8 * train_mask_u_b.to(device)
-        tmp_metrics = get_metrics(tmp_metrics, ground_truth_u_b.to(device), pred_b, conf["topk"])
-
-    metrics = {}
-    for m, topk_res in tmp_metrics.items():
-        metrics[m] = {}
-        for topk, res in topk_res.items():
-            metrics[m][topk] = res[0] / res[1]
-
-    return metrics
-
 
 def get_metrics(metrics, grd, pred, topks):
     tmp = {"recall": {}, "ndcg": {}}
