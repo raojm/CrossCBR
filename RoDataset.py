@@ -45,6 +45,38 @@ class RoDatasets():
         self.user_feature = []
         self.user_bundle = []
 
+        # 处理旧版数据文件
+        # self.init_orig_data()
+
+        # 处理新版RO数据 所有数据都在一个csv文件里
+        self.init_new_orig_data()
+
+       
+
+
+        self.num_users, self.num_bundles, self.num_items = self.get_data_size()
+
+        b_i_graph = self.get_bi()
+        u_i_pairs, u_i_graph = self.get_ui()
+
+        # 分割数据 成traindata testdata
+        u_b_pairs_train, u_b_graph_train = self.get_ub("train")
+        u_b_pairs_val, u_b_graph_val = self.get_ub("tune")
+        u_b_pairs_test, u_b_graph_test = self.get_ub("test")
+
+        u_b_for_neg_sample, b_b_for_neg_sample = None, None
+
+        self.bundle_train_data = BundleTrainDataset(conf, u_b_pairs_train, u_b_graph_train, self.num_bundles, u_b_for_neg_sample, b_b_for_neg_sample, conf["neg_num"])
+        self.bundle_val_data = BundleTestDataset(u_b_pairs_val, u_b_graph_val, u_b_graph_train, self.num_users, self.num_bundles)
+        self.bundle_test_data = BundleTestDataset(u_b_pairs_test, u_b_graph_test, u_b_graph_train, self.num_users, self.num_bundles)
+
+        self.graphs = [u_b_graph_train, u_i_graph, b_i_graph]
+
+        self.train_loader = DataLoader(self.bundle_train_data, batch_size=batch_size_train, shuffle=True, num_workers=10, drop_last=True)
+        self.val_loader = DataLoader(self.bundle_val_data, batch_size=batch_size_test, shuffle=False, num_workers=20)
+        self.test_loader = DataLoader(self.bundle_test_data, batch_size=batch_size_test, shuffle=False, num_workers=20)
+
+    def init_orig_data(self):
         with open(os.path.join("./datasets/RO/orig", 'bundle_item.csv'), 'r', encoding='UTF-8') as f:
             for line in f.readlines()[1:]:
                 bundle_info_tuple = []
@@ -107,33 +139,74 @@ class RoDatasets():
                     self.user_bundle.append(user_bundle_item_tuple)
                 self.user_bundle_orig_data.append(user_info_tuple)
 
-            # self.user_bundle_orig_data = list(map(lambda s: tuple(aaaa(i.strip('"')) for i in s[:-1].split(',')), f.readlines()[1:]))
 
-        indice = np.array(self.user_bundle_orig_data, dtype=np.int32)
-        values = np.ones(len(self.user_bundle_orig_data), dtype=np.float32)
+    def init_new_orig_data(self):
+        with open(os.path.join("./datasets/RO/orig", 'bundle_item.csv'), 'r', encoding='UTF-8') as f:
+            for line_index, line in enumerate(f.readlines(), start=1):
+                if line_index %100 == 0:
+                    print("bundle_item line_index:", line_index) 
+                bundle_info_tuple = []
+                bundle_mapping_index = -1
+                item_mapping_index = -1
+                for field_index,szField in enumerate(line[:-1].split(',')):
+                    szField = szField.strip('"')
+                    field_value = toNumber(szField)
+                    if 0==field_index:
+                        bundle_mapping_index = len(self.bundle_mapping_array)
+                        if field_value in self.bundle_mapping_array:
+                            bundle_mapping_index = self.bundle_mapping_array.index(field_value)
+                        else:
+                            self.bundle_mapping_array.append(field_value)
+                        bundle_info_tuple.append(bundle_mapping_index)
+                    else:
+                        bundle_info_tuple.append(field_value)
 
-        # 分割数据 成traindata testdata
+                    if field_value > 0 and field_index > 0 and 0==field_index%3:
+                        item_mapping_index = len(self.item_mapping_array)
+                        if field_value in self.item_mapping_array:
+                            item_mapping_index = self.item_mapping_array.index(field_value)
+                        else:
+                            self.item_mapping_array.append(field_value)
+                        # bundle item 列表
+                        bundle_item_tuple = [bundle_mapping_index, item_mapping_index]
+                        if bundle_item_tuple not in self.bundle_item:
+                            self.bundle_item.append(bundle_item_tuple)
+                # bundle feature
+                self.bundle_feature.insert(bundle_mapping_index, bundle_info_tuple)
+                self.bundle_item_orig_data.append(bundle_info_tuple)
 
-        self.num_users, self.num_bundles, self.num_items = self.get_data_size()
+        # print(self.bundle_feature)
+        # print(self.bundle_mapping_array)
+        # print(self.item_mapping_array)
+        # print(self.bundle_item)
 
-        b_i_graph = self.get_bi()
-        u_i_pairs, u_i_graph = self.get_ui()
-
-        u_b_pairs_train, u_b_graph_train = self.get_ub("train")
-        u_b_pairs_val, u_b_graph_val = self.get_ub("tune")
-        u_b_pairs_test, u_b_graph_test = self.get_ub("test")
-
-        u_b_for_neg_sample, b_b_for_neg_sample = None, None
-
-        self.bundle_train_data = BundleTrainDataset(conf, u_b_pairs_train, u_b_graph_train, self.num_bundles, u_b_for_neg_sample, b_b_for_neg_sample, conf["neg_num"])
-        self.bundle_val_data = BundleTestDataset(u_b_pairs_val, u_b_graph_val, u_b_graph_train, self.num_users, self.num_bundles)
-        self.bundle_test_data = BundleTestDataset(u_b_pairs_test, u_b_graph_test, u_b_graph_train, self.num_users, self.num_bundles)
-
-        self.graphs = [u_b_graph_train, u_i_graph, b_i_graph]
-
-        self.train_loader = DataLoader(self.bundle_train_data, batch_size=batch_size_train, shuffle=True, num_workers=10, drop_last=True)
-        self.val_loader = DataLoader(self.bundle_val_data, batch_size=batch_size_test, shuffle=False, num_workers=20)
-        self.test_loader = DataLoader(self.bundle_test_data, batch_size=batch_size_test, shuffle=False, num_workers=20)
+        with open(os.path.join("./datasets/RO/orig", 'record_all.csv'), 'r', encoding='UTF-8') as f:
+            for line_index, line in enumerate(f.readlines(), start=1):
+                if line_index %10000 == 0:
+                    print("record_all line_index:", line_index) 
+                user_info_tuple = []
+                user_mapping_index = -1
+                for field_index,szField in enumerate(line[:-1].split(',')):
+                    szField = szField.strip('"')
+                    field_value = toNumber(szField)
+                    if 0==field_index:
+                        user_mapping_index = len(self.user_mapping_array)
+                        if field_value in self.user_mapping_array:
+                            user_mapping_index = self.user_mapping_array.index(field_value)
+                        else:
+                            self.user_mapping_array.append(field_value)
+                        user_info_tuple.append(user_mapping_index)
+                    else:
+                        user_info_tuple.append(field_value)
+                # user feature
+                self.user_feature.insert(user_mapping_index, user_info_tuple)
+                # # user bundle 列表
+                bundle_id = user_info_tuple[9]
+                is_bought = user_info_tuple[2]
+                user_bundle_item_tuple = [user_mapping_index, self.bundle_mapping_array.index(bundle_id)]
+                if is_bought > 0 and user_bundle_item_tuple not in self.user_bundle:
+                    self.user_bundle.append(user_bundle_item_tuple)
+                self.user_bundle_orig_data.append(user_info_tuple)
 
 
     def get_data_size(self):
