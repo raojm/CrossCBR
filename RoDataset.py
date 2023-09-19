@@ -33,14 +33,14 @@ class RoDatasets():
         batch_size_train = conf['batch_size_train']
         batch_size_test = conf['batch_size_test']
 
-        self.bundle_mapping_array = []
+        self.bundle_mapping_array = dict()
         self.bundle_item_orig_data = []
         self.bundle_feature = []
         self.bundle_item = []
 
-        self.item_mapping_array = []
+        self.item_mapping_array = dict()
 
-        self.user_mapping_array = []
+        self.user_mapping_array = dict()
         self.user_bundle_orig_data = []
         self.user_feature = []
         self.user_bundle = []
@@ -88,9 +88,9 @@ class RoDatasets():
                     if 0==field_index:
                         bundle_mapping_index = len(self.bundle_mapping_array)
                         if field_value in self.bundle_mapping_array:
-                            bundle_mapping_index = self.bundle_mapping_array.index(field_value)
+                            bundle_mapping_index = self.bundle_mapping_array.get(field_value)
                         else:
-                            self.bundle_mapping_array.append(field_value)
+                            self.bundle_mapping_array[field_value] = bundle_mapping_index
                         bundle_info_tuple.append(bundle_mapping_index)
                     else:
                         bundle_info_tuple.append(field_value)
@@ -98,9 +98,9 @@ class RoDatasets():
                     if field_value > 0 and field_index > 0 and 0==field_index%3:
                         item_mapping_index = len(self.item_mapping_array)
                         if field_value in self.item_mapping_array:
-                            item_mapping_index = self.item_mapping_array.index(field_value)
+                            item_mapping_index = self.item_mapping_array.get(field_value)
                         else:
-                            self.item_mapping_array.append(field_value)
+                            self.item_mapping_array[field_value] = item_mapping_index
                         # bundle item 列表
                         bundle_item_tuple = [bundle_mapping_index, item_mapping_index]
                         if bundle_item_tuple not in self.bundle_item:
@@ -124,9 +124,9 @@ class RoDatasets():
                     if 0==field_index:
                         user_mapping_index = len(self.user_mapping_array)
                         if field_value in self.user_mapping_array:
-                            user_mapping_index = self.user_mapping_array.index(field_value)
+                            user_mapping_index = self.user_mapping_array.get(field_value)
                         else:
-                            self.user_mapping_array.append(field_value)
+                            self.user_mapping_array[field_value] = user_mapping_index
                         user_info_tuple.append(user_mapping_index)
                     else:
                         user_info_tuple.append(field_value)
@@ -134,7 +134,7 @@ class RoDatasets():
                 self.user_feature.insert(user_mapping_index, user_info_tuple)
                 # # user bundle 列表
                 bundle_id = user_info_tuple[8]
-                user_bundle_item_tuple = [user_mapping_index, self.bundle_mapping_array.index(bundle_id)]
+                user_bundle_item_tuple = [user_mapping_index, self.bundle_mapping_array.get(bundle_id)]
                 if user_bundle_item_tuple not in self.user_bundle:
                     self.user_bundle.append(user_bundle_item_tuple)
                 self.user_bundle_orig_data.append(user_info_tuple)
@@ -154,9 +154,9 @@ class RoDatasets():
                     if 0==field_index:
                         bundle_mapping_index = len(self.bundle_mapping_array)
                         if field_value in self.bundle_mapping_array:
-                            bundle_mapping_index = self.bundle_mapping_array.index(field_value)
+                            bundle_mapping_index = self.bundle_mapping_array.get(field_value)
                         else:
-                            self.bundle_mapping_array.append(field_value)
+                            self.bundle_mapping_array[field_value] = bundle_mapping_index
                         bundle_info_tuple.append(bundle_mapping_index)
                     else:
                         bundle_info_tuple.append(field_value)
@@ -164,9 +164,9 @@ class RoDatasets():
                     if field_value > 0 and field_index > 0 and 0==field_index%3:
                         item_mapping_index = len(self.item_mapping_array)
                         if field_value in self.item_mapping_array:
-                            item_mapping_index = self.item_mapping_array.index(field_value)
+                            item_mapping_index = self.item_mapping_array.get(field_value)
                         else:
-                            self.item_mapping_array.append(field_value)
+                            self.item_mapping_array[field_value] = item_mapping_index
                         # bundle item 列表
                         bundle_item_tuple = [bundle_mapping_index, item_mapping_index]
                         if bundle_item_tuple not in self.bundle_item:
@@ -181,9 +181,9 @@ class RoDatasets():
         # print(self.bundle_item)
 
         with open(os.path.join("./datasets/RO/orig", 'record_all.csv'), 'r', encoding='UTF-8') as f:
-            for line_index, line in enumerate(f.readlines(), start=1):
+            for line_index, line in enumerate(f, start=1):
                 if line_index %10000 == 0:
-                    print("record_all line_index:", line_index) 
+                    print("record_all line_index:", line_index)
                 user_info_tuple = []
                 user_mapping_index = -1
                 for field_index,szField in enumerate(line[:-1].split(',')):
@@ -192,9 +192,9 @@ class RoDatasets():
                     if 0==field_index:
                         user_mapping_index = len(self.user_mapping_array)
                         if field_value in self.user_mapping_array:
-                            user_mapping_index = self.user_mapping_array.index(field_value)
+                            user_mapping_index = self.user_mapping_array.get(field_value)
                         else:
-                            self.user_mapping_array.append(field_value)
+                            self.user_mapping_array[field_value] = user_mapping_index
                         user_info_tuple.append(user_mapping_index)
                     else:
                         user_info_tuple.append(field_value)
@@ -203,7 +203,7 @@ class RoDatasets():
                 # # user bundle 列表
                 bundle_id = user_info_tuple[9]
                 is_bought = user_info_tuple[2]
-                user_bundle_item_tuple = [user_mapping_index, self.bundle_mapping_array.index(bundle_id)]
+                user_bundle_item_tuple = [user_mapping_index, self.bundle_mapping_array.get(bundle_id)]
                 if is_bought > 0 and user_bundle_item_tuple not in self.user_bundle:
                     self.user_bundle.append(user_bundle_item_tuple)
                 self.user_bundle_orig_data.append(user_info_tuple)
