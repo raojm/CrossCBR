@@ -142,7 +142,9 @@ class RoDatasets():
 
     def init_new_orig_data(self):
         with open(os.path.join("./datasets/RO/orig", 'bundle_item.csv'), 'r', encoding='UTF-8') as f:
-            for line_index, line in enumerate(f.readlines(), start=1):
+            #跳过第一行 file是可迭代对象
+            next(f)
+            for line_index, line in enumerate(f):
                 if line_index %100 == 0:
                     print("bundle_item line_index:", line_index) 
                 bundle_info_tuple = []
@@ -181,8 +183,10 @@ class RoDatasets():
         # print(self.bundle_item)
 
         with open(os.path.join("./datasets/RO/orig", 'record_all.csv'), 'r', encoding='UTF-8') as f:
-            for line_index, line in enumerate(f, start=1):
-                if line_index %10000 == 0:
+            #跳过第一行 file是可迭代对象
+            next(f)
+            for line_index, line in enumerate(f):
+                if line_index %100000 == 0:
                     print("record_all line_index:", line_index)
                 user_info_tuple = []
                 user_mapping_index = -1
