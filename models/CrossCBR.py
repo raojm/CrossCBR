@@ -224,6 +224,7 @@ class CrossCBR(nn.Module):
         pos = pos[:, 0, :]
         aug = aug[:, 0, :]
 
+        # normalize L2归一化 https://zhuanlan.zhihu.com/p/28023308 [x/x**2+y**2+z**2, y/x**2+y**2+z**2, z/x**2+y**2+z**2]
         pos = F.normalize(pos, p=2, dim=1)
         aug = F.normalize(aug, p=2, dim=1)
         pos_score = torch.sum(pos * aug, dim=1) # [batch_size]
