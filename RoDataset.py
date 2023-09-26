@@ -194,7 +194,7 @@ class RoDatasets():
             for line_index, line in enumerate(file_csv):
                 if line_index > 0 and line_index%10000 == 0:
                     print("record_all line_index:", line_index)
-                    break
+                    # break
                 user_info_tuple = []
                 user_mapping_index = -1
                 is_new_user = False

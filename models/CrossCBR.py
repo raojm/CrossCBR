@@ -59,13 +59,15 @@ class CrossCBR(nn.Module):
         self.num_bundles = conf["num_bundles"]
         self.num_items = conf["num_items"]
 
+        self.orig_user_feature_tensor = torch.IntTensor(self.dataset.user_feature).to(device)
+
         self.init_emb()
 
         raw_graph = self.dataset.graphs
         assert isinstance(raw_graph, list)
         self.ub_graph, self.ui_graph, self.bi_graph = raw_graph
 
-        self.orig_user_feature_tensor = torch.IntTensor(self.dataset.user_feature).to(device)
+        
 
         # generate the graph without any dropouts for testing
         self.get_item_level_graph_ori()
@@ -91,7 +93,8 @@ class CrossCBR(nn.Module):
 
     def init_emb(self):
         self.users_feature_embedding = nn.Embedding(5000, self.embedding_size)
-        nn.init.xavier_normal_(self.users_feature_embedding.weight)
+        # nn.init.xavier_normal_(self.users_feature_embedding.weight)
+        # self.users_feature = self.users_feature_embedding(self.orig_user_feature_tensor).permute(1,0,2)
         # self.users_feature = nn.Parameter(torch.FloatTensor(self.num_users, self.embedding_size))
         # nn.init.xavier_normal_(self.users_feature)
         self.bundles_feature = nn.Parameter(torch.FloatTensor(self.num_bundles, self.embedding_size))
@@ -208,22 +211,22 @@ class CrossCBR(nn.Module):
 
     def propagate(self, test=False):
         # 使用self.users_feature之前 需要通过 embedding层重新算 并且交换维度
-        self.users_feature = self.users_feature_embedding(self.orig_user_feature_tensor).permute(1,0,2)
+        # self.users_feature = self.users_feature_embedding(self.orig_user_feature_tensor).permute(1,0,2)
 
         #  =============================  item level propagation  =============================
         if test:
-            IL_users_feature, IL_items_feature = self.one_propagate(self.item_level_graph_ori, self.users_feature, self.items_feature, self.item_level_dropout, test)
+            IL_users_feature, IL_items_feature = self.one_propagate(self.item_level_graph_ori, self.users_feature_embedding(self.orig_user_feature_tensor).permute(1,0,2), self.items_feature, self.item_level_dropout, test)
         else:
-            IL_users_feature, IL_items_feature = self.one_propagate(self.item_level_graph, self.users_feature, self.items_feature, self.item_level_dropout, test)
+            IL_users_feature, IL_items_feature = self.one_propagate(self.item_level_graph, self.users_feature_embedding(self.orig_user_feature_tensor).permute(1,0,2), self.items_feature, self.item_level_dropout, test)
 
         # aggregate the items embeddings within one bundle to obtain the bundle representation
         IL_bundles_feature = self.get_IL_bundle_rep(IL_items_feature, test)
 
         #  ============================= bundle level propagation =============================
         if test:
-            BL_users_feature, BL_bundles_feature = self.one_propagate(self.bundle_level_graph_ori, self.users_feature, self.bundles_feature, self.bundle_level_dropout, test)
+            BL_users_feature, BL_bundles_feature = self.one_propagate(self.bundle_level_graph_ori, self.users_feature_embedding(self.orig_user_feature_tensor).permute(1,0,2), self.bundles_feature, self.bundle_level_dropout, test)
         else:
-            BL_users_feature, BL_bundles_feature = self.one_propagate(self.bundle_level_graph, self.users_feature, self.bundles_feature, self.bundle_level_dropout, test)
+            BL_users_feature, BL_bundles_feature = self.one_propagate(self.bundle_level_graph, self.users_feature_embedding(self.orig_user_feature_tensor).permute(1,0,2), self.bundles_feature, self.bundle_level_dropout, test)
 
         users_feature = [IL_users_feature, BL_users_feature]
         bundles_feature = [IL_bundles_feature, BL_bundles_feature]
