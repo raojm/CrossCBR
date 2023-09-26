@@ -108,7 +108,7 @@ def main():
 
         # model
         if conf['model'] == 'CrossCBR':
-            model = CrossCBR(conf, dataset.graphs).to(device)
+            model = CrossCBR(conf, dataset).to(device)
         else:
             raise ValueError("Unimplemented model %s" %(conf["model"]))
 

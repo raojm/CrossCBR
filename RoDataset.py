@@ -1,13 +1,17 @@
 import torch
 import os
+import math
+from csv import reader
 import scipy.sparse as sp 
 import numpy as np
 from torch.utils.data import Dataset, DataLoader
 from utility import BundleTrainDataset, BundleTestDataset, print_statistics
 
-# stEmbedding = torch.nn.Embedding(500, 3)
-# print(stEmbedding)
-# aaaa = torch.LongTensor([[1,2,3,4,5,6,7,8,9], [2,2,3,4,5,6,7,8,9]])
+# stEmbedding = torch.nn.Parameter(torch.FloatTensor(50, 3))
+# stEmbedding = torch.nn.Embedding(50, 3)
+# torch.nn.init.xavier_normal_(stEmbedding.weight)
+# print(stEmbedding.weight)
+# aaaa = torch.LongTensor([[1,2,3,4,5], [3,2,1,4,5], [3,2,1,4,5], [3,2,1,4,5]])
 # print(aaaa)                  
 # result = stEmbedding(aaaa)
 # print(result)
@@ -40,6 +44,7 @@ class RoDatasets():
 
         self.item_mapping_array = dict()
 
+        self.game_role_dict = dict()
         self.user_mapping_array = dict()
         self.user_bundle_orig_data = []
         self.user_feature = []
@@ -182,28 +187,44 @@ class RoDatasets():
         # print(self.item_mapping_array)
         # print(self.bundle_item)
 
-        with open(os.path.join("./datasets/RO/orig", 'record_all.csv'), 'r', encoding='UTF-8') as f:
+        with open(os.path.join("./datasets/RO/orig", 'record_small.csv'), 'r', encoding='UTF-8') as f:
             #跳过第一行 file是可迭代对象
             next(f)
-            for line_index, line in enumerate(f):
-                if line_index %100000 == 0:
+            file_csv = reader(f)
+            for line_index, line in enumerate(file_csv):
+                if line_index > 0 and line_index%10000 == 0:
                     print("record_all line_index:", line_index)
+                    break
                 user_info_tuple = []
                 user_mapping_index = -1
-                for field_index,szField in enumerate(line[:-1].split(',')):
-                    szField = szField.strip('"')
+                is_new_user = False
+                for field_index,szField in enumerate(line):
+                    # szField = szField.strip("'")
                     field_value = toNumber(szField)
                     if 0==field_index:
                         user_mapping_index = len(self.user_mapping_array)
                         if field_value in self.user_mapping_array:
                             user_mapping_index = self.user_mapping_array.get(field_value)
                         else:
+                            is_new_user = True
                             self.user_mapping_array[field_value] = user_mapping_index
                         user_info_tuple.append(user_mapping_index)
                     else:
                         user_info_tuple.append(field_value)
                 # user feature
-                self.user_feature.insert(user_mapping_index, user_info_tuple)
+                game_role_index = len(self.game_role_dict)
+                if user_info_tuple[6] in self.game_role_dict:
+                    game_role_index = self.game_role_dict.get(user_info_tuple[6])
+                else:
+                    self.game_role_dict[user_info_tuple[6]] = game_role_index
+                user_feature_value = [ user_info_tuple[4], min(5000-1, int(math.pow(user_info_tuple[5], 0.66))), game_role_index,  min(5000-1, int(math.pow(user_info_tuple[7], 0.62))), user_info_tuple[11]]
+                user_feature_value += list(map(int, user_info_tuple[11:19]))
+                user_feature_value += list(map(int, user_info_tuple[22:55]))
+                aaaa = list(filter(lambda x: x < 0 or x>=5000, user_feature_value))
+                if len(aaaa) > 0:
+                    print("aaaa:", aaaa)
+                if is_new_user:
+                    self.user_feature.insert(user_mapping_index, user_feature_value)
                 # # user bundle 列表
                 bundle_id = user_info_tuple[9]
                 is_bought = user_info_tuple[2]

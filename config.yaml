@@ -1,7 +1,7 @@
 Youshu:
   data_path: './datasets'
-  batch_size_train: 2048 # the batch size for training
-  batch_size_test: 2048 # the batch size for testing
+  batch_size_train: 100 # the batch size for training
+  batch_size_test: 100 # the batch size for testing
   topk: [5, 10, 20, 40] # the topks metrics for evaluation
   neg_num: 1 # number of negatives used for BPR loss. All the experiments use 1.
   
@@ -28,8 +28,8 @@ Youshu:
 
 NetEase:
   data_path: './datasets'
-  batch_size_train: 2048
-  batch_size_test: 2048
+  batch_size_train: 100
+  batch_size_test: 100
   topk: [5, 10, 20, 40]
   neg_num: 1
 

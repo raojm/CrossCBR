@@ -46,11 +46,12 @@ def np_edge_dropout(values, dropout_ratio):
 
 
 class CrossCBR(nn.Module):
-    def __init__(self, conf, raw_graph):
+    def __init__(self, conf, dataset):
         super().__init__()
         self.conf = conf
         device = self.conf["device"]
         self.device = device
+        self.dataset = dataset
 
         self.embedding_size = conf["embedding_size"]
         self.embed_L2_norm = conf["l2_reg"]
@@ -60,8 +61,11 @@ class CrossCBR(nn.Module):
 
         self.init_emb()
 
+        raw_graph = self.dataset.graphs
         assert isinstance(raw_graph, list)
         self.ub_graph, self.ui_graph, self.bi_graph = raw_graph
+
+        self.orig_user_feature_tensor = torch.IntTensor(self.dataset.user_feature).to(device)
 
         # generate the graph without any dropouts for testing
         self.get_item_level_graph_ori()
@@ -86,8 +90,10 @@ class CrossCBR(nn.Module):
 
 
     def init_emb(self):
-        self.users_feature = nn.Parameter(torch.FloatTensor(self.num_users, self.embedding_size))
-        nn.init.xavier_normal_(self.users_feature)
+        self.users_feature_embedding = nn.Embedding(5000, self.embedding_size)
+        nn.init.xavier_normal_(self.users_feature_embedding.weight)
+        # self.users_feature = nn.Parameter(torch.FloatTensor(self.num_users, self.embedding_size))
+        # nn.init.xavier_normal_(self.users_feature)
         self.bundles_feature = nn.Parameter(torch.FloatTensor(self.num_bundles, self.embedding_size))
         nn.init.xavier_normal_(self.bundles_feature)
         self.items_feature = nn.Parameter(torch.FloatTensor(self.num_items, self.embedding_size))
@@ -164,21 +170,25 @@ class CrossCBR(nn.Module):
 
 
     def one_propagate(self, graph, A_feature, B_feature, mess_dropout, test):
-        features = torch.cat((A_feature, B_feature), 0)
-        all_features = [features]
+        
+        all_features = []
+        for A_feature_item in A_feature:
 
-        for i in range(self.num_layers):
-            features = torch.spmm(graph, features)
-            if self.conf["aug_type"] == "MD" and not test: # !!! important
-                features = mess_dropout(features)
+            features = torch.cat((A_feature_item, B_feature), 0)
+            all_features.append(features)
 
-            features = features / (i+2)
-            all_features.append(F.normalize(features, p=2, dim=1))
+            for i in range(self.num_layers):
+                features = torch.spmm(graph, features)
+                if self.conf["aug_type"] == "MD" and not test: # !!! important
+                    features = mess_dropout(features)
+
+                features = features / (i+2)
+                all_features.append(F.normalize(features, p=2, dim=1))
 
         all_features = torch.stack(all_features, 1)
         all_features = torch.sum(all_features, dim=1).squeeze(1)
 
-        A_feature, B_feature = torch.split(all_features, (A_feature.shape[0], B_feature.shape[0]), 0)
+        A_feature, B_feature = torch.split(all_features, (A_feature.shape[1], B_feature.shape[0]), 0)
 
         return A_feature, B_feature
 
@@ -197,6 +207,9 @@ class CrossCBR(nn.Module):
 
 
     def propagate(self, test=False):
+        # 使用self.users_feature之前 需要通过 embedding层重新算 并且交换维度
+        self.users_feature = self.users_feature_embedding(self.orig_user_feature_tensor).permute(1,0,2)
+
         #  =============================  item level propagation  =============================
         if test:
             IL_users_feature, IL_items_feature = self.one_propagate(self.item_level_graph_ori, self.users_feature, self.items_feature, self.item_level_dropout, test)
@@ -270,7 +283,8 @@ class CrossCBR(nn.Module):
         # bundles: [bs, 1+neg_num]
         users, bundles = batch
 
-        # feature 需要通过 embedding层重新算
+        # 使用self.users_feature之前 需要通过 embedding层重新算
+
         users_feature, bundles_feature = self.propagate()
 
         users_embedding = [i[users].expand(-1, bundles.shape[1], -1) for i in users_feature]
