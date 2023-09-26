@@ -182,7 +182,7 @@ class RoDatasets():
         # print(self.item_mapping_array)
         # print(self.bundle_item)
 
-        with open(os.path.join("./datasets/RO/orig", 'record_all.csv'), 'r', encoding='UTF-8') as f:
+        with open(os.path.join("./datasets/RO/orig", 'record_small.csv'), 'r', encoding='UTF-8') as f:
             #跳过第一行 file是可迭代对象
             next(f)
             for line_index, line in enumerate(f):
