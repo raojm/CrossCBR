@@ -187,9 +187,9 @@ class CrossCBR(nn.Module):
 
                 features = features / (i+2)
                 all_features.append(F.normalize(features, p=2, dim=1))
-
         all_features = torch.stack(all_features, 1)
         all_features = torch.sum(all_features, dim=1).squeeze(1)
+        all_features = F.normalize(all_features, p=2, dim=1)
 
         A_feature, B_feature = torch.split(all_features, (A_feature.shape[1], B_feature.shape[0]), 0)
 
