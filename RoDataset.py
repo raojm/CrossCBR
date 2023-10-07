@@ -48,7 +48,8 @@ class RoDatasets():
         self.game_role_dict = dict()
         self.user_mapping_array = dict()
         self.user_bundle_orig_data = []
-        self.user_feature = []
+        
+        self.user_feature_orderdict = OrderedDict()
         self.user_bundle_orderdict = OrderedDict()
         
         
@@ -59,6 +60,7 @@ class RoDatasets():
         # 处理新版RO数据 所有数据都在一个csv文件里
         self.init_new_orig_data()
 
+        self.user_feature = list(self.user_feature_orderdict.keys())
         #init_new_orig_data之后通过user_bundle_orderdict转化成list
         self.user_bundle = list(self.user_bundle_orderdict.keys())
 
@@ -205,36 +207,45 @@ class RoDatasets():
                 for field_index,szField in enumerate(line):
                     # szField = szField.strip("'")
                     field_value = toNumber(szField)
-                    if 0==field_index:
-                        user_mapping_index = len(self.user_mapping_array)
-                        if field_value in self.user_mapping_array:
-                            user_mapping_index = self.user_mapping_array.get(field_value)
-                        else:
-                            is_new_user = True
-                            self.user_mapping_array[field_value] = user_mapping_index
-                        user_info_tuple.append(user_mapping_index)
-                    else:
-                        user_info_tuple.append(field_value)
+                    user_info_tuple.append(field_value)
+                    # if 0==field_index:
+                    #     user_mapping_index = len(self.user_mapping_array)
+                    #     if field_value in self.user_mapping_array:
+                    #         user_mapping_index = self.user_mapping_array.get(field_value)
+                    #     else:
+                    #         is_new_user = True
+                    #         self.user_mapping_array[field_value] = user_mapping_index
+                    #     user_info_tuple.append(user_mapping_index)
+                    # else:
+                    #     user_info_tuple.append(field_value)
                 # user feature
                 game_role_index = len(self.game_role_dict)
                 if user_info_tuple[6] in self.game_role_dict:
                     game_role_index = self.game_role_dict.get(user_info_tuple[6])
                 else:
                     self.game_role_dict[user_info_tuple[6]] = game_role_index
-                user_feature_value = [ user_info_tuple[4], min(5000-1, int(math.pow(user_info_tuple[5], 0.66))), game_role_index,  min(5000-1, int(math.pow(user_info_tuple[7], 0.62))), user_info_tuple[11]]
-                user_feature_value += list(map(int, user_info_tuple[11:19]))
-                user_feature_value += list(map(int, user_info_tuple[22:55]))
-                aaaa = list(filter(lambda x: x < 0 or x>=5000, user_feature_value))
-                if len(aaaa) > 0:
-                    print("aaaa:", aaaa)
-                if is_new_user:
-                    self.user_feature.insert(user_mapping_index, user_feature_value)
+                user_feature_value_tuple = (user_info_tuple[4], min(5000-1, int(math.pow(user_info_tuple[5], 0.66))), game_role_index,  min(5000-1, int(math.pow(user_info_tuple[7], 0.62))), user_info_tuple[11])
+                user_feature_value_tuple += tuple(map(int, user_info_tuple[11:19]))
+                user_feature_value_tuple += tuple(map(int, user_info_tuple[22:55]))
+                # aaaa = list(filter(lambda x: x < 0 or x>=5000, user_feature_value_tuple))
+                # if len(aaaa) > 0:
+                #     print("aaaa:", aaaa)
+                # if is_new_user:
+                #     self.user_feature.insert(user_mapping_index, user_feature_value_tuple)
                 # # user bundle 列表
                 bundle_id = user_info_tuple[9]
                 is_bought = user_info_tuple[2]
-                user_bundle_item_tuple = (user_mapping_index, self.bundle_mapping_array.get(bundle_id))
-                if is_bought > 0 and user_bundle_item_tuple not in self.user_bundle_orderdict:
-                    self.user_bundle_orderdict[user_bundle_item_tuple]= len(self.user_bundle_orderdict)
+
+                #user_mapping_index 换成OrderedDict生成 不同的user_feature_value当不同的user处理
+                user_feature_index = len(self.user_feature_orderdict)
+                if user_feature_value_tuple not in self.user_feature_orderdict:
+                    self.user_feature_orderdict[user_feature_value_tuple]= len(self.user_feature_orderdict)
+                else:
+                    user_feature_index = self.user_feature_orderdict[user_feature_value_tuple]
+                
+                user_bundle_tuple = (user_feature_index, self.bundle_mapping_array.get(bundle_id))
+                if is_bought > 0 and user_bundle_tuple not in self.user_bundle_orderdict:
+                    self.user_bundle_orderdict[user_bundle_tuple]= len(self.user_bundle_orderdict)
                 self.user_bundle_orig_data.append(user_info_tuple)
 
 
@@ -244,7 +255,7 @@ class RoDatasets():
         #     name = name.split("_")[0]
         # with open(os.path.join(self.path, self.name, '{}_data_size.txt'.format(name)), 'r') as f:
         #     return [int(s) for s in f.readline().split('\t')][:3]
-        return [len(self.user_mapping_array), len(self.bundle_mapping_array), len(self.item_mapping_array)]
+        return [len(self.user_feature_orderdict), len(self.bundle_mapping_array), len(self.item_mapping_array)]
 
     def get_aux_graph(self, u_i_graph, b_i_graph, conf):
         u_b_from_i = u_i_graph @ b_i_graph.T
