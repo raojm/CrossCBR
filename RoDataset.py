@@ -4,6 +4,7 @@ import math
 from csv import reader
 import scipy.sparse as sp 
 import numpy as np
+from collections import OrderedDict
 from torch.utils.data import Dataset, DataLoader
 from utility import BundleTrainDataset, BundleTestDataset, print_statistics
 
@@ -48,7 +49,9 @@ class RoDatasets():
         self.user_mapping_array = dict()
         self.user_bundle_orig_data = []
         self.user_feature = []
-        self.user_bundle = []
+        self.user_bundle_orderdict = OrderedDict()
+        
+        
 
         # 处理旧版数据文件
         # self.init_orig_data()
@@ -56,7 +59,8 @@ class RoDatasets():
         # 处理新版RO数据 所有数据都在一个csv文件里
         self.init_new_orig_data()
 
-       
+        #init_new_orig_data之后通过user_bundle_orderdict转化成list
+        self.user_bundle = list(self.user_bundle_orderdict.keys())
 
 
         self.num_users, self.num_bundles, self.num_items = self.get_data_size()
@@ -139,9 +143,9 @@ class RoDatasets():
                 self.user_feature.insert(user_mapping_index, user_info_tuple)
                 # # user bundle 列表
                 bundle_id = user_info_tuple[8]
-                user_bundle_item_tuple = [user_mapping_index, self.bundle_mapping_array.get(bundle_id)]
-                if user_bundle_item_tuple not in self.user_bundle:
-                    self.user_bundle.append(user_bundle_item_tuple)
+                user_bundle_item_tuple = (user_mapping_index, self.bundle_mapping_array.get(bundle_id))
+                if user_bundle_item_tuple not in self.user_bundle_orderdict:
+                    self.user_bundle_orderdict[user_bundle_item_tuple] = len(self.user_bundle_orderdict)
                 self.user_bundle_orig_data.append(user_info_tuple)
 
 
@@ -228,9 +232,9 @@ class RoDatasets():
                 # # user bundle 列表
                 bundle_id = user_info_tuple[9]
                 is_bought = user_info_tuple[2]
-                user_bundle_item_tuple = [user_mapping_index, self.bundle_mapping_array.get(bundle_id)]
-                if is_bought > 0 and user_bundle_item_tuple not in self.user_bundle:
-                    self.user_bundle.append(user_bundle_item_tuple)
+                user_bundle_item_tuple = (user_mapping_index, self.bundle_mapping_array.get(bundle_id))
+                if is_bought > 0 and user_bundle_item_tuple not in self.user_bundle_orderdict:
+                    self.user_bundle_orderdict[user_bundle_item_tuple]= len(self.user_bundle_orderdict)
                 self.user_bundle_orig_data.append(user_info_tuple)
 
 
