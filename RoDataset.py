@@ -193,7 +193,7 @@ class RoDatasets():
         # print(self.item_mapping_array)
         # print(self.bundle_item)
 
-        with open(os.path.join("./datasets/RO/orig", 'record_small.csv'), 'r', encoding='UTF-8') as f:
+        with open(os.path.join("./datasets/RO/orig", 'record_all.csv'), 'r', encoding='UTF-8') as f:
             #跳过第一行 file是可迭代对象
             next(f)
             file_csv = reader(f)
@@ -224,7 +224,7 @@ class RoDatasets():
                     game_role_index = self.game_role_dict.get(user_info_tuple[6])
                 else:
                     self.game_role_dict[user_info_tuple[6]] = game_role_index
-                user_feature_value_tuple = (user_info_tuple[4], min(5000-1, int(math.pow(user_info_tuple[5], 0.66))), game_role_index,  min(5000-1, int(math.pow(user_info_tuple[7], 0.62))), user_info_tuple[11])
+                user_feature_value_tuple = (user_info_tuple[4], min(1000-1, int(math.pow(user_info_tuple[5], 0.5))), game_role_index,  min(1000-1, int(math.pow(user_info_tuple[7], 0.5))), user_info_tuple[11])
                 user_feature_value_tuple += tuple(map(int, user_info_tuple[11:19]))
                 user_feature_value_tuple += tuple(map(int, user_info_tuple[22:55]))
                 # aaaa = list(filter(lambda x: x < 0 or x>=5000, user_feature_value_tuple))

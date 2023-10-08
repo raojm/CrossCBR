@@ -154,6 +154,9 @@ def main():
                     metrics["test"] = test(model, dataset.test_loader, conf)
                     best_metrics, best_perform, best_epoch = log_metrics(conf, model, metrics, run, log_path, checkpoint_model_path, checkpoint_conf_path, epoch, batch_anchor, best_metrics, best_perform, best_epoch)
 
+        print("module train finished, save module")
+        torch.save(model, 'ro_crosscbr_model.pth')
+
 
 def test(model, dataloader, conf):
     tmp_metrics = {}
