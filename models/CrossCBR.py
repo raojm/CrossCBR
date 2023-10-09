@@ -211,22 +211,23 @@ class CrossCBR(nn.Module):
 
     def propagate(self, test=False):
         # 使用self.users_feature之前 需要通过 embedding层重新算 并且交换维度
-        # self.users_feature = self.users_feature_embedding(self.orig_user_feature_tensor).permute(1,0,2)
+        users_feature_tmp = self.users_feature_embedding(self.orig_user_feature_tensor).permute(1,0,2)
+        print("users_feature_tmp size:", users_feature_tmp.element_size() * users_feature_tmp.nelement())
 
         #  =============================  item level propagation  =============================
         if test:
-            IL_users_feature, IL_items_feature = self.one_propagate(self.item_level_graph_ori, self.users_feature_embedding(self.orig_user_feature_tensor).permute(1,0,2), self.items_feature, self.item_level_dropout, test)
+            IL_users_feature, IL_items_feature = self.one_propagate(self.item_level_graph_ori, users_feature_tmp, self.items_feature, self.item_level_dropout, test)
         else:
-            IL_users_feature, IL_items_feature = self.one_propagate(self.item_level_graph, self.users_feature_embedding(self.orig_user_feature_tensor).permute(1,0,2), self.items_feature, self.item_level_dropout, test)
+            IL_users_feature, IL_items_feature = self.one_propagate(self.item_level_graph, users_feature_tmp, self.items_feature, self.item_level_dropout, test)
 
         # aggregate the items embeddings within one bundle to obtain the bundle representation
         IL_bundles_feature = self.get_IL_bundle_rep(IL_items_feature, test)
 
         #  ============================= bundle level propagation =============================
         if test:
-            BL_users_feature, BL_bundles_feature = self.one_propagate(self.bundle_level_graph_ori, self.users_feature_embedding(self.orig_user_feature_tensor).permute(1,0,2), self.bundles_feature, self.bundle_level_dropout, test)
+            BL_users_feature, BL_bundles_feature = self.one_propagate(self.bundle_level_graph_ori, users_feature_tmp, self.bundles_feature, self.bundle_level_dropout, test)
         else:
-            BL_users_feature, BL_bundles_feature = self.one_propagate(self.bundle_level_graph, self.users_feature_embedding(self.orig_user_feature_tensor).permute(1,0,2), self.bundles_feature, self.bundle_level_dropout, test)
+            BL_users_feature, BL_bundles_feature = self.one_propagate(self.bundle_level_graph, users_feature_tmp, self.bundles_feature, self.bundle_level_dropout, test)
 
         users_feature = [IL_users_feature, BL_users_feature]
         bundles_feature = [IL_bundles_feature, BL_bundles_feature]

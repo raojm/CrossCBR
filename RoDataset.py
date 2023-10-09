@@ -48,6 +48,8 @@ class RoDatasets():
         self.game_role_dict = dict()
         self.user_mapping_array = dict()
         self.user_bundle_orig_data = []
+
+        self.user_item_ordereddict = OrderedDict()
         
         self.user_feature_orderdict = OrderedDict()
         self.user_bundle_orderdict = OrderedDict()
@@ -195,9 +197,21 @@ class RoDatasets():
 
         with open(os.path.join("./datasets/RO/orig", 'record_all.csv'), 'r', encoding='UTF-8') as f:
             #跳过第一行 file是可迭代对象
-            next(f)
+            # next(f)
             file_csv = reader(f)
+            # field_index 到item_mapping_index映射
+            item_index_dict = OrderedDict()
             for line_index, line in enumerate(file_csv):
+                if 0 == line_index:
+                    for field_index,szField in enumerate(line):
+                        item_id_tmp = 0
+                        if szField.startswith("buy"):
+                            item_id_tmp = toNumber(szField[3:])
+                        elif szField.startswith("cost"):
+                            item_id_tmp = toNumber(szField[4:])
+                        if item_id_tmp>0 and item_id_tmp in self.item_mapping_array:
+                                item_index_dict[field_index] = self.item_mapping_array.get(item_id_tmp)
+                    continue
                 if line_index > 0 and line_index%10000 == 0:
                     print("record_all line_index:", line_index)
                     # break
@@ -236,17 +250,29 @@ class RoDatasets():
                 bundle_id = user_info_tuple[9]
                 is_bought = user_info_tuple[2]
 
-                #user_mapping_index 换成OrderedDict生成 不同的user_feature_value当不同的user处理
-                user_feature_index = len(self.user_feature_orderdict)
-                if user_feature_value_tuple not in self.user_feature_orderdict:
-                    self.user_feature_orderdict[user_feature_value_tuple]= len(self.user_feature_orderdict)
-                else:
-                    user_feature_index = self.user_feature_orderdict[user_feature_value_tuple]
+                user_related_items = []
+                for field_index, item_mapping_index in item_index_dict.items():
+                    user_item_value = user_info_tuple[field_index]
+                    if user_item_value>0:
+                        user_related_items.append(item_mapping_index)
                 
-                user_bundle_tuple = (user_feature_index, self.bundle_mapping_array.get(bundle_id))
-                if is_bought > 0 and user_bundle_tuple not in self.user_bundle_orderdict:
-                    self.user_bundle_orderdict[user_bundle_tuple]= len(self.user_bundle_orderdict)
-                self.user_bundle_orig_data.append(user_info_tuple)
+                if is_bought > 0 or len(user_related_items)>0:
+                    #user_mapping_index 换成OrderedDict生成 不同的user_feature_value当不同的user处理
+                    user_feature_index = len(self.user_feature_orderdict)
+                    if user_feature_value_tuple not in self.user_feature_orderdict:
+                        self.user_feature_orderdict[user_feature_value_tuple]= len(self.user_feature_orderdict)
+                    else:
+                        user_feature_index = self.user_feature_orderdict[user_feature_value_tuple]
+                    
+                    user_bundle_tuple = (user_feature_index, self.bundle_mapping_array.get(bundle_id))
+                    if is_bought > 0 and user_bundle_tuple not in self.user_bundle_orderdict:
+                        self.user_bundle_orderdict[user_bundle_tuple]= len(self.user_bundle_orderdict)
+                    self.user_bundle_orig_data.append(user_info_tuple)
+
+                    for item_mapping_index_tmp in user_related_items:
+                        user_item_tuple = (user_feature_index, item_mapping_index_tmp)
+                        if user_item_tuple not in self.user_item_ordereddict:
+                            self.user_item_ordereddict[user_item_tuple] = len(self.user_item_ordereddict)
 
 
     def get_data_size(self):
