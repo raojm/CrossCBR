@@ -239,7 +239,7 @@ class RoDatasets():
                 else:
                     self.game_role_dict[user_info_tuple[6]] = game_role_index
                 user_feature_value_tuple = (user_info_tuple[4], min(100-1, int(math.pow(user_info_tuple[5], 0.3))), game_role_index,  min(100-1, int(math.pow(user_info_tuple[7], 0.3))), user_info_tuple[11])
-                user_feature_value_tuple += tuple(map(int, user_info_tuple[11:19]))
+                user_feature_value_tuple += tuple(map(int, user_info_tuple[11:12]))
                 # user_feature_value_tuple += tuple(map(int, user_info_tuple[22:55]))
                 user_feature_value_tuple += tuple(map(int, user_info_tuple[22:24]))
                 user_feature_value_tuple += tuple(map(int, user_info_tuple[27:28]))
