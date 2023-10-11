@@ -212,7 +212,7 @@ class CrossCBR(nn.Module):
     def propagate(self, test=False):
         # 使用self.users_feature之前 需要通过 embedding层重新算 并且交换维度
         users_feature_tmp = self.users_feature_embedding(self.orig_user_feature_tensor).permute(1,0,2)
-        print("users_feature_tmp size:", users_feature_tmp.element_size() * users_feature_tmp.nelement())
+        # print("users_feature_tmp size:", users_feature_tmp.element_size() * users_feature_tmp.nelement())
 
         #  =============================  item level propagation  =============================
         if test:
