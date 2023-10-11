@@ -92,7 +92,7 @@ class CrossCBR(nn.Module):
 
 
     def init_emb(self):
-        self.users_feature_embedding = nn.Embedding(5000, self.embedding_size)
+        self.users_feature_embedding = nn.Embedding(200, self.embedding_size)
         # nn.init.xavier_normal_(self.users_feature_embedding.weight)
         # self.users_feature = self.users_feature_embedding(self.orig_user_feature_tensor).permute(1,0,2)
         # self.users_feature = nn.Parameter(torch.FloatTensor(self.num_users, self.embedding_size))
